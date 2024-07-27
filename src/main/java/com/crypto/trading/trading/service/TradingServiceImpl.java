@@ -32,9 +32,6 @@ public class TradingServiceImpl implements TradingService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-//    private static final String BINANCE_URL = "https://api.binance.com/api/v3/ticker/bookTicker";
-//    private static final String HUOBI_URL = "https://api.huobi.pro/market/tickers";
-
     @Autowired
     private ApiService apiService;
     @Autowired
@@ -76,7 +73,6 @@ public class TradingServiceImpl implements TradingService {
             binanceTradingCurrencyApiRespList = objectMapper.readValue(binanceResponse.getBody(),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, BinanceTradingCurrencyApiResp.class));
         }
-//        log.info("[getBestCryptoPrice] binanceTradingCurrencyApiRespList {}:", binanceTradingCurrencyApiRespList);
 
         //Huobi
         ResponseEntity<String> huobiResponse = apiService.callApi(HUOBI_URL, headers);
@@ -89,7 +85,6 @@ public class TradingServiceImpl implements TradingService {
                     objectMapper.getTypeFactory().constructCollectionType(List.class, HuoBiTradingCurrencyApiResp.class)
             );
         }
-//        log.info("[getBestCryptoPrice] huoBiTradingCurrencyApiRespList {}:", huoBiTradingCurrencyApiRespList);
 
         return processAndSaveBestPrices(binanceTradingCurrencyApiRespList, huoBiTradingCurrencyApiRespList);
         }
