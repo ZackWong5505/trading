@@ -30,16 +30,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TradingServiceImpl implements TradingService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private ApiService apiService;
-    @Autowired
-    private TradingCurrencyRepository tradingCurrencyRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private TradeHistoryRepository tradeHistoryRepository;
+    private final ObjectMapper objectMapper;
+    private final ApiService apiService;
+    private final TradingCurrencyRepository tradingCurrencyRepository;
+    private final UserRepository userRepository;
+    private final TradeHistoryRepository tradeHistoryRepository;
 
     @Value("${BINANCE_URL}")
     private String BINANCE_URL ;
@@ -47,7 +43,19 @@ public class TradingServiceImpl implements TradingService {
     @Value("${HUOBI_URL}")
     private String HUOBI_URL ;
 
-    @Scheduled(fixedRate = 10000) // 10 seconds
+    @Value("${scheduledTask.interval:10000}")
+    private long scheduledTaskInterval;
+
+    public TradingServiceImpl(ApiService apiService, TradingCurrencyRepository tradingCurrencyRepository,
+                              UserRepository userRepository, TradeHistoryRepository tradeHistoryRepository) {
+        this.apiService = apiService;
+        this.tradingCurrencyRepository = tradingCurrencyRepository;
+        this.userRepository = userRepository;
+        this.tradeHistoryRepository = tradeHistoryRepository;
+        this.objectMapper = new ObjectMapper();
+    }
+
+    @Scheduled(fixedRateString = "${scheduledTask.interval}")
     public void scheduledTask() throws JsonProcessingException {
         Map<String, TradingCurrencyDTO> mapData = getBestCryptoPrice();
         String cryptoDetailsJson = objectMapper.writeValueAsString(mapData);
@@ -57,38 +65,39 @@ public class TradingServiceImpl implements TradingService {
                 .build();
 
         log.info("[scheduledTask] tradingCurrency {}:", tradingCurrency);
-        saveTradingCurrency(tradingCurrency);
-
+        tradingCurrencyRepository.save(tradingCurrency);
     }
 
     public Map<String, TradingCurrencyDTO> getBestCryptoPrice() throws JsonProcessingException {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
-        List<BinanceTradingCurrencyApiResp> binanceTradingCurrencyApiRespList = new ArrayList<>();
-        List<HuoBiTradingCurrencyApiResp> huoBiTradingCurrencyApiRespList = new ArrayList<>();
 
-        //Binance
-        ResponseEntity<String> binanceResponse = apiService.callApi(BINANCE_URL, headers);
-        if (binanceResponse.getStatusCode().is2xxSuccessful()) {
-            binanceTradingCurrencyApiRespList = objectMapper.readValue(binanceResponse.getBody(),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, BinanceTradingCurrencyApiResp.class));
-        }
-
-        //Huobi
-        ResponseEntity<String> huobiResponse = apiService.callApi(HUOBI_URL, headers);
-        if (huobiResponse.getStatusCode().is2xxSuccessful()) {
-            Map<String, Object> huobiData = objectMapper.readValue(huobiResponse.getBody(),Map.class);
-
-            List<Map<String, String>> huobiTicks = (List<Map<String, String>>) huobiData.get("data");
-
-            huoBiTradingCurrencyApiRespList = objectMapper.convertValue(huobiTicks,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, HuoBiTradingCurrencyApiResp.class)
-            );
-        }
+        // Combine API calls and process responses
+        List<BinanceTradingCurrencyApiResp> binanceTradingCurrencyApiRespList = fetchBinanceData(headers);
+        List<HuoBiTradingCurrencyApiResp> huoBiTradingCurrencyApiRespList = fetchHuobiData(headers);
 
         return processAndSaveBestPrices(binanceTradingCurrencyApiRespList, huoBiTradingCurrencyApiRespList);
-        }
+    }
 
+    private List<BinanceTradingCurrencyApiResp> fetchBinanceData(HttpHeaders headers) throws JsonProcessingException {
+        ResponseEntity<String> binanceResponse = apiService.callApi(BINANCE_URL, headers);
+        if (binanceResponse.getStatusCode().is2xxSuccessful()) {
+            return objectMapper.readValue(binanceResponse.getBody(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, BinanceTradingCurrencyApiResp.class));
+        }
+        return Collections.emptyList();
+    }
+
+    private List<HuoBiTradingCurrencyApiResp> fetchHuobiData(HttpHeaders headers) throws JsonProcessingException {
+        ResponseEntity<String> huobiResponse = apiService.callApi(HUOBI_URL, headers);
+        if (huobiResponse.getStatusCode().is2xxSuccessful()) {
+            Map<String, Object> huobiData = objectMapper.readValue(huobiResponse.getBody(), Map.class);
+            List<Map<String, String>> huobiTicks = (List<Map<String, String>>) huobiData.get("data");
+            return objectMapper.convertValue(huobiTicks,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, HuoBiTradingCurrencyApiResp.class));
+        }
+        return Collections.emptyList();
+    }
 
     public Map<String, TradingCurrencyDTO> processAndSaveBestPrices(List<BinanceTradingCurrencyApiResp> binanceList, List<HuoBiTradingCurrencyApiResp> huobiList) {
 
@@ -133,10 +142,6 @@ public class TradingServiceImpl implements TradingService {
 
         return bestPrices;
 
-    }
-
-    public TradingCurrency saveTradingCurrency(TradingCurrency tradingCurrency) {
-        return tradingCurrencyRepository.save(tradingCurrency);
     }
 
     public LatestPriceDTO getLatestAggregatedPrice(){

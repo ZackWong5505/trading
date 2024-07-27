@@ -38,7 +38,7 @@ public class TradingController {
             tradingService.executeTransaction(tradeRequest);
             return ResponseEntity.status(HttpStatus.OK).build();
         } catch (Exception e) {
-            log.error("Error fetching latest aggregated price", e);
+            log.error("Error executeTrade transaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -49,7 +49,7 @@ public class TradingController {
             WalletBalanceDTO walletBalanceDTO = tradingService.getLatestWalletBal(userName);
             return ResponseEntity.ok(walletBalanceDTO);
         } catch (Exception e) {
-            log.error("Error fetching latest aggregated price", e);
+            log.error("Error fetching latest wallet balance", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -60,7 +60,7 @@ public class TradingController {
             List<TradingLogDTO> tradingLogDTO = tradingService.getTradingHistory(userName);
             return ResponseEntity.ok(tradingLogDTO);
         } catch (Exception e) {
-            log.error("Error fetching latest aggregated price", e);
+            log.error("Error fetching history", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
