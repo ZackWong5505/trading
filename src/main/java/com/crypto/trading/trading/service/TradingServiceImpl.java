@@ -72,32 +72,12 @@ public class TradingServiceImpl implements TradingService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
 
-//        //Binance
-//        ResponseEntity<String> binanceResponse = apiService.callApi(BINANCE_URL, headers);
-//        if (binanceResponse.getStatusCode().is2xxSuccessful()) {
-//            binanceTradingCurrencyApiRespList = objectMapper.readValue(binanceResponse.getBody(),
-//                    objectMapper.getTypeFactory().constructCollectionType(List.class, BinanceTradingCurrencyApiResp.class));
-//        }
-////        log.info("[getBestCryptoPrice] binanceTradingCurrencyApiRespList {}:", binanceTradingCurrencyApiRespList);
-//
-//        //Huobi
-//        ResponseEntity<String> huobiResponse = apiService.callApi(HUOBI_URL, headers);
-//        if (huobiResponse.getStatusCode().is2xxSuccessful()) {
-//            Map<String, Object> huobiData = objectMapper.readValue(huobiResponse.getBody(),Map.class);
-//
-//            List<Map<String, String>> huobiTicks = (List<Map<String, String>>) huobiData.get("data");
-//
-//            huoBiTradingCurrencyApiRespList = objectMapper.convertValue(huobiTicks,
-//                    objectMapper.getTypeFactory().constructCollectionType(List.class, HuoBiTradingCurrencyApiResp.class)
-//            );
-//        }
         // Combine API calls and process responses
         List<BinanceTradingCurrencyApiResp> binanceTradingCurrencyApiRespList = fetchBinanceData(headers);
         List<HuoBiTradingCurrencyApiResp> huoBiTradingCurrencyApiRespList = fetchHuobiData(headers);
 
-
         return processAndSaveBestPrices(binanceTradingCurrencyApiRespList, huoBiTradingCurrencyApiRespList);
-        }
+    }
 
     private List<BinanceTradingCurrencyApiResp> fetchBinanceData(HttpHeaders headers) throws JsonProcessingException {
         ResponseEntity<String> binanceResponse = apiService.callApi(BINANCE_URL, headers);
