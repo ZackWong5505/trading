@@ -14,18 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +46,7 @@ public class TradingServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        tradingService = new TradingServiceImpl(apiService, tradingCurrencyRepository, userRepository, tradeHistoryRepository);
     }
 
     @InjectMocks
@@ -91,7 +85,7 @@ public class TradingServiceImplTest {
     }
 
     @Test
-    public void testGetBestCryptoPrice() throws JsonProcessingException {
+    void testGetBestCryptoPrice() throws JsonProcessingException {
 
         ResponseEntity<String> binanceResponse = new ResponseEntity<>("[{\"symbol\":\"BTCUSDT\",\"bidPrice\":\"40000.0\",\"bidQty\":\"40000.0\",\"askPrice\":\"40000.0\",\"askQty\":\"40000.0\"}]", HttpStatus.OK);
         ResponseEntity<String> huobiResponse = new ResponseEntity<>("{\n" +
@@ -124,7 +118,7 @@ public class TradingServiceImplTest {
     }
 
     @Test
-    public void testGetLatestWalletBal() {
+    void testGetLatestWalletBal() {
         User mockUser = new User();
         mockUser.setUserName("testUser");
         mockUser.setBalance(1000.0);
@@ -139,7 +133,7 @@ public class TradingServiceImplTest {
     }
 
     @Test
-    public void testGetTradingHistory() {
+    void testGetTradingHistory() {
         // Prepare mock user and trading history
         User mockUser = new User();
         mockUser.setUserName("testUser");
